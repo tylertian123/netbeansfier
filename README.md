@@ -1,4 +1,4 @@
-# netbeansfier
+# netbeansifier
 Simple and dumb Python script that packages up Java files into a basic Netbeans project for ICS4U.
 
 ```
