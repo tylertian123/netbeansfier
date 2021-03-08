@@ -4,6 +4,8 @@ import re
 import shutil
 import tempfile
 from distutils import dir_util
+from typing import Any, List
+import pathspec
 
 pattern = re.compile(r"#\[(\w+)\]#")
 
@@ -21,6 +23,10 @@ Available Options:
     --jvmargs   <additional jvm args>
     --javacargs <additional javac args>
     --zip
+
+netbeansifier supports gitignore-style ignore files.
+Files named .nbignore contain patterns for files/directories that are excluded during copying.
+The file itself is also ignored.
 """.strip()
 
 args = {
@@ -94,7 +100,27 @@ def netbeansify():
             except UnicodeDecodeError:
                 print("File", file, "is a binary, skipping...")
 
-    dir_util.copy_tree(source_path, os.path.join(args["#out"], "src/"))
+    # Copy over the files
+    def copy_dir(src_dir: str, dest_dir: str, ignores: List[Any]):
+        ignore_file = os.path.join(src_dir, ".nbignore")
+        has_ignore = False
+        if os.path.exists(ignore_file):
+            with open(ignore_file, "r") as f:
+                ignores.append(pathspec.PathSpec.from_lines("gitwildmatch", f))
+            has_ignore = True
+        with os.scandir(src_dir) as sdit:
+            for entry in sdit:
+                if entry.name == ".nbignore" or any(spec.match_file(entry.path) for spec in ignores):
+                    continue
+                if entry.is_file():
+                    # copy the file over
+                    shutil.copyfile(os.path.join(src_dir, entry.name), os.path.join(dest_dir, entry.name))
+                elif entry.is_dir():
+                    copy_dir(os.path.join(src_dir, entry.name), os.path.join(dest_dir, entry.name), ignores)
+        if has_ignore:
+            ignores.pop()
+
+    copy_dir(source_path, os.path.join(args["#out"], "src/"), [])
     try:
         shutil.copy(os.path.join(os.path.dirname(__file__), "netbeanz.png"), args["#out"])
     except OSError:
