@@ -14,19 +14,22 @@ Usage: python3 netbeansify.py <input directory> [options]
 
 Available Options:
     --help
-    --name      <project name>
-    --mainclass <main class incl. package>
-    --out       <output dir> (optional if using --zip)
-    --template  <template dir>
-    --sourcever <source compat. java version>
-    --targetver <target compat. java version>
-    --jvmargs   <additional jvm args>
-    --javacargs <additional javac args>
+    --sourcepath    <input directory> (optional if already specified)    
+    --name          <project name> (default: input directory name)
+    --mainclass     <main class incl. package> (default: project name)
+    --out           <output dir> (optional if using --zip)
+    --template      <template dir> (default: "template/" in the Python file's directory)
+    --sourcever     <source compat. java version> (default: 11)
+    --targetver     <target compat. java version> (default: 11)
+    --jvmargs       <additional jvm args>
+    --javacargs     <additional javac args>
     --zip
 
 netbeansifier supports gitignore-style ignore files.
 Files named .nbignore contain patterns for files/directories that are excluded during copying.
 The file itself is also ignored.
+
+You can also make a netbeansifierfile. Each line will be treated as a command-line option.
 """.strip()
 
 args = {
@@ -49,9 +52,31 @@ long_opts = {
     "template": "#template",
 }
 
+cmdargs = []
+try:
+    with open("./netbeansifierfile", "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if line.startswith("--"):
+                try:
+                    i = line.index(" ")
+                    option = line[:i]
+                    arg = line[i + 1:]
+                    cmdargs.append(option)
+                    cmdargs.append(arg)
+                except ValueError:
+                    cmdargs.append(line)
+            else:
+                cmdargs.append(line)
+except OSError:
+    pass
+cmdargs.extend(sys.argv[1:])
+
 makezip = False
 source_path = None
-it = iter(sys.argv)
+it = iter(cmdargs)
 for s in it:
     if s.startswith("--"):
         if s == "--help":
@@ -59,16 +84,22 @@ for s in it:
             sys.exit(0)
         if s == "--zip":
             makezip = True
-        else:
-            try:
-                opt = long_opts[s[2:]]
-                args[opt] = next(it)
-            except KeyError:
-                print("Invalid option:", s, file=sys.stderr)
-                sys.exit(1)
-            except StopIteration:
-                print("Option", s, "needs a value", file=sys.stderr)
-                sys.exit(1)
+            continue
+        if s == "--sourcepath":
+            source_path = next(it)
+            continue
+        if s == "--config":
+            config_path = next(it)
+            continue
+        try:
+            opt = long_opts[s[2:]]
+            args[opt] = next(it)
+        except KeyError:
+            print("Invalid option:", s, file=sys.stderr)
+            sys.exit(1)
+        except StopIteration:
+            print("Option", s, "needs a value", file=sys.stderr)
+            sys.exit(1)
     else:
         source_path = s
 
