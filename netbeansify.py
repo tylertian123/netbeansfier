@@ -54,8 +54,8 @@ long_opts = {
 
 cmdargs = []
 try:
-    with open("./netbeansifierfile", "r") as f:
-        for line in f:
+    with open("./netbeansifierfile", "r") as nbconfig:
+        for line in nbconfig:
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
@@ -116,6 +116,10 @@ args["project_name"] = args["project_name"] or os.path.basename(source_path)
 args["main_class"] = args["main_class"] or args["project_name"]
 
 def netbeansify():
+    global source_path
+    # Make sure these paths are absolute
+    source_path = os.path.abspath(source_path)
+    args["#out"] = os.path.abspath(args["#out"])
     # Copy over the template
     dir_util.copy_tree(args["#template"], args["#out"])
 
@@ -139,6 +143,7 @@ def netbeansify():
             with open(ignore_file, "r") as f:
                 ignores.append(pathspec.PathSpec.from_lines("gitwildmatch", f))
             has_ignore = True
+        os.makedirs(dest_dir, exist_ok=True)
         with os.scandir(src_dir) as sdit:
             for entry in sdit:
                 if entry.name == ".nbignore" or any(spec.match_file(entry.path) for spec in ignores):
@@ -147,11 +152,14 @@ def netbeansify():
                     # copy the file over
                     shutil.copyfile(os.path.join(src_dir, entry.name), os.path.join(dest_dir, entry.name))
                 elif entry.is_dir():
+                    # Make sure that this directory is not the destination
+                    if os.path.abspath(entry.path) == args["#out"]:
+                        continue
                     copy_dir(os.path.join(src_dir, entry.name), os.path.join(dest_dir, entry.name), ignores)
         if has_ignore:
             ignores.pop()
 
-    copy_dir(source_path, os.path.join(args["#out"], "src/"), [])
+    copy_dir(source_path, os.path.join(args["#out"], "src"), [])
     try:
         shutil.copy(os.path.join(os.path.dirname(__file__), "netbeanz.png"), args["#out"])
     except OSError:
@@ -168,7 +176,6 @@ else:
     if makezip:
         print("Making zip file...")
         shutil.make_archive(args["project_name"], "zip", os.path.dirname(os.path.abspath(args["#out"])), os.path.basename(args["#out"]))
-
 
 
 print("Done.")
