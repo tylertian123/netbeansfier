@@ -1,4 +1,5 @@
 # netbeansifier
+
 Simple and dumb Python script that packages up Java files into a basic Netbeans project for ICS4U.
 
 ```text
@@ -26,4 +27,21 @@ The file itself is also ignored.
 You can also make a netbeansifierfile. Each line will be treated as a command-line option.
 Note: Because of the --precommand and --postcommand options, running an untrusted netbeansifierfile
 could result in malicious commands being executed!
+```
+
+Example `netbeansifierfile`:
+
+```shell
+# This is a comment (only works at the beginning of the line)
+# Each line is a new command-line option
+--name ProjectName
+--mainclass MyMainClass
+--sourcepath .
+# Example pre-command to clean up old archives and make fresh Javadocs
+# Pre-commands are executed in the source directory
+--precommand rm -rf ProjectName.zip doc/ && javadoc -d doc *.java
+# Example post-command to move the doc folder and other files into the correct location
+# Post-commands are executed in the destination directory (project root)
+--postcommand mv src/doc src/input1.txt src/input2.txt .
+--zip
 ```
