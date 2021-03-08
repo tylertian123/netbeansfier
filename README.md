@@ -15,6 +15,8 @@ Available Options:
     --targetver     <target compat. java version> (default: 11)
     --jvmargs       <additional jvm args>
     --javacargs     <additional javac args>
+    --precommand    <command to run before generating the files (in the source dir)>
+    --postcommand   <command to run after generating the files (in the dest dir)>
     --zip
 
 netbeansifier supports gitignore-style ignore files.
@@ -22,4 +24,6 @@ Files named .nbignore contain patterns for files/directories that are excluded d
 The file itself is also ignored.
 
 You can also make a netbeansifierfile. Each line will be treated as a command-line option.
+Note: Because of the --precommand and --postcommand options, running an untrusted netbeansifierfile
+could result in malicious commands being executed!
 ```

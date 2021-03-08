@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import tempfile
+import subprocess
 from distutils import dir_util
 from typing import Any, List
 import pathspec
@@ -23,6 +24,8 @@ Available Options:
     --targetver     <target compat. java version> (default: 11)
     --jvmargs       <additional jvm args>
     --javacargs     <additional javac args>
+    --precommand    <command to run before generating the files (in the source dir)>
+    --postcommand   <command to run after generating the files (in the dest dir)>
     --zip
 
 netbeansifier supports gitignore-style ignore files.
@@ -30,6 +33,8 @@ Files named .nbignore contain patterns for files/directories that are excluded d
 The file itself is also ignored.
 
 You can also make a netbeansifierfile. Each line will be treated as a command-line option.
+Note: Because of the --precommand and --postcommand options, running an untrusted netbeansifierfile
+could result in malicious commands being executed!
 """.strip()
 
 args = {
@@ -50,6 +55,8 @@ long_opts = {
     "javacargs": "javac_args",
     "out": "#out",
     "template": "#template",
+    "precommand": "#pre_command",
+    "postcommand": "#post_command",
 }
 
 cmdargs = []
@@ -120,6 +127,12 @@ def netbeansify():
     # Make sure these paths are absolute
     source_path = os.path.abspath(source_path)
     args["#out"] = os.path.abspath(args["#out"])
+    if args.get("#pre_command"):
+        print("Running pre-command...")
+        old_workdir = os.getcwd()
+        os.chdir(source_path)
+        subprocess.run(args["#pre_command"], shell=True, check=True)
+        os.chdir(old_workdir)
     # Copy over the template
     dir_util.copy_tree(args["#template"], args["#out"])
 
@@ -159,17 +172,27 @@ def netbeansify():
         if has_ignore:
             ignores.pop()
 
+    print("Copying files...")
     copy_dir(source_path, os.path.join(args["#out"], "src"), [])
     try:
         shutil.copy(os.path.join(os.path.dirname(__file__), "netbeanz.png"), args["#out"])
     except OSError:
         print("Warning: Logo not found! This is very important!", file=sys.stderr)
+    
+    if args.get("#post_command"):
+        print("Running post-command...")
+        old_workdir = os.getcwd()
+        os.chdir(args["#out"])
+        subprocess.run(args["#post_command"], shell=True, check=True)
+        os.chdir(old_workdir)
+
 
 if args["#out"] is None:
     with tempfile.TemporaryDirectory() as tempdir:
         out_path = os.path.join(tempdir, args["project_name"])
         args["#out"] = out_path
         netbeansify()
+        print("Making zip file...")
         shutil.make_archive(args["project_name"], "zip", tempdir, args["project_name"])
 else:
     netbeansify()
