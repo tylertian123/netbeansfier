@@ -12,12 +12,14 @@ Usage: python3 netbeansify.py <input directory> [options]
 
 Available Options:
     --help
-    --name <project name>
+    --name      <project name>
     --mainclass <main class incl. package>
-    --out <output dir> (optional if using --zip)
-    --template <template dir>
+    --out       <output dir> (optional if using --zip)
+    --template  <template dir>
     --sourcever <source compat. java version>
     --targetver <target compat. java version>
+    --jvmargs   <additional jvm args>
+    --javacargs <additional javac args>
     --zip
 """.strip()
 
@@ -35,6 +37,8 @@ long_opts = {
     "sourcever": "javac_source",
     "targetver": "javac_target",
     "mainclass": "main_class",
+    "jvmargs": "jvm_args",
+    "javacargs": "javac_args",
     "out": "#out",
     "template": "#template",
 }
@@ -86,7 +90,7 @@ def netbeansify():
                 with open(file, "r") as f:
                     text = f.read()
                 with open(file, "w") as f:
-                    f.write(pattern.sub(lambda match: args[match.group(1)], text))
+                    f.write(pattern.sub(lambda match: args.get(match.group(1), ""), text))
             except UnicodeDecodeError:
                 print("File", file, "is a binary, skipping...")
 
