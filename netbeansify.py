@@ -159,7 +159,7 @@ def netbeansify():
         os.makedirs(dest_dir, exist_ok=True)
         with os.scandir(src_dir) as sdit:
             for entry in sdit:
-                if entry.name == ".nbignore" or any(spec.match_file(entry.path) for spec in ignores):
+                if entry.name == ".nbignore" or entry.name == "netbeansifierfile" or any(spec.match_file(entry.path) for spec in ignores):
                     continue
                 if entry.is_file():
                     # copy the file over
