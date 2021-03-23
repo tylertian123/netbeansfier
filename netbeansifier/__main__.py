@@ -1,9 +1,7 @@
-# netbeansifier
+"""
+netbeansifier: Package up Java files into a basic Netbeans project for ICS4U.
 
-Simple and dumb Python script that packages up Java files into a basic Netbeans project for ICS4U.
-
-```text
-Usage: netbeansify <input directory> [options]
+Usage: python3 -m netbeansifier <input directory> [options]
 
 Available Options:
     --help
@@ -21,27 +19,14 @@ Available Options:
     --zip
 
 netbeansifier supports gitignore-style ignore files.
-Files named .nbignore contain patterns for files/directories that are excluded during copying.
+Files named .nbignore contain REPLACE_PATTERNs for files/directories that are excluded during copying.
 The file itself is also ignored.
 
 You can also make a netbeansifierfile. Each line will be treated as a command-line option.
 Note: Because of the --precommand and --postcommand options, running an untrusted netbeansifierfile
 could result in malicious commands being executed!
-```
+"""
 
-Example `netbeansifierfile`:
+from .netbeansify import main
 
-```shell
-# This is a comment (only works at the beginning of the line)
-# Each line is a new command-line option
---name ProjectName
---mainclass MyMainClass
---sourcepath .
-# Example pre-command to clean up old archives and make fresh Javadocs
-# Pre-commands are executed in the source directory
---precommand rm -rf ProjectName.zip doc/ && javadoc -d doc *.java
-# Example post-command to move the doc folder and other files into the correct location
-# Post-commands are executed in the destination directory (project root)
---postcommand mv src/doc src/input1.txt src/input2.txt .
---zip
-```
+main()
