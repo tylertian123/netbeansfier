@@ -1,5 +1,5 @@
 """
-netbeansifier: Package up Java files into a basic Netbeans project for ICS4U.
+netbeansifier: Package up Java files into a basic NetBeans project for ICS4U.
 
 Usage: python3 -m netbeansifier <input directory> [options]
 
@@ -21,7 +21,7 @@ Available Options:
                                 used by chaining with &&.
     --template <dir>        Specify the template file directory (default: "template/" in the Python
                                 file's directory).
-    --zip                   Create a Netbeans project zip named ProjectName.zip in the current
+    --zip                   Create a NetBeans project zip named ProjectName.zip in the current
                                 directory; if this is set, --out is optional.
     --nologo                Do not include netbeanz.png in the output.
 

@@ -13,7 +13,7 @@ setup(
     author_email="tylertian123@gmail.com",
     include_package_data=True,
     zip_safe=False,
-    description="Simple and dumb Python script that packages up Java files into a basic Netbeans project for ICS4U.",
+    description="Simple and dumb Python script that packages up Java files into a basic NetBeans project for ICS4U.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/tylertian123/netbeansifier",

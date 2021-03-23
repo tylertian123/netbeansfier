@@ -31,7 +31,7 @@ Available Options:
                                 used by chaining with &&.
     --template <dir>        Specify the template file directory (default: "template/" in the Python
                                 file's directory).
-    --zip                   Create a Netbeans project zip named ProjectName.zip in the current
+    --zip                   Create a NetBeans project zip named ProjectName.zip in the current
                                 directory; if this is set, --out is optional.
     --nologo                Do not include netbeanz.png in the output.
 
@@ -153,12 +153,12 @@ def main():
             out_path = os.path.join(tempdir, args["project_name"])
             args["#out"] = out_path
             netbeansify(source_path, args, flags)
-            print("Making zip file...")
+            print("Files generated successfully. Making zip file...")
             shutil.make_archive(args["project_name"], "zip", tempdir, args["project_name"])
     else:
         netbeansify(source_path, args, flags)
         if "zip" in flags:
-            print("Making zip file...")
+            print("Files generated successfully. Making zip file...")
             shutil.make_archive(args["project_name"], "zip", os.path.dirname(os.path.abspath(args["#out"])), os.path.basename(args["#out"]))
 
     print("Done.")
@@ -168,19 +168,23 @@ def netbeansify(source_path: str, args: Mapping[str, Any], flags: Set[str]):
     """
     Generate the netbeansified project.
     """
-
+    
+    print("Netbeansify started.")
     # Make sure these paths are absolute
     source_path = os.path.abspath(source_path)
     args["#out"] = os.path.abspath(args["#out"])
     if args.get("#pre_command"):
-        print("Running pre-command...")
+        print("Running pre-command; output:\n")
         old_workdir = os.getcwd()
         os.chdir(source_path)
         subprocess.run(args["#pre_command"], shell=True, check=True)
         os.chdir(old_workdir)
+        print("\nPre-command exited with success.")
+    print("Copying template files...")
     # Copy over the template
     dir_util.copy_tree(args["#template"], args["#out"])
 
+    print("Starting template file generation...")
     for dirpath, _, files in os.walk(args["#out"]):
         for file in files:
             file = os.path.join(dirpath, file)
@@ -191,7 +195,7 @@ def netbeansify(source_path: str, args: Mapping[str, Any], flags: Set[str]):
                 with open(file, "w") as f:
                     f.write(REPLACE_PATTERN.sub(lambda match: args.get(match.group(1), ""), text))
             except UnicodeDecodeError:
-                print("File", file, "is a binary, skipping...")
+                print("File", file, "is a binary, skipping.")
 
     # Copy over the files
     def copy_dir(src_dir: str, dest_dir: str, ignores: List[Any]):
@@ -217,17 +221,20 @@ def netbeansify(source_path: str, args: Mapping[str, Any], flags: Set[str]):
         if has_ignore:
             ignores.pop()
 
-    print("Copying files...")
+    print("Template files generated. Copying source files...")
     copy_dir(source_path, os.path.join(args["#out"], "src"), [])
+    print("Source files copied successfully.")
     if "nologo" not in flags:
         try:
+            print("Copying logo...")
             shutil.copy(os.path.join(os.path.dirname(__file__), "netbeanz.png"), args["#out"])
         except OSError:
             print("Warning: Logo not found! This is very important!", file=sys.stderr)
     
     if args.get("#post_command"):
-        print("Running post-command...")
+        print("Running post-command; output:\n")
         old_workdir = os.getcwd()
         os.chdir(args["#out"])
         subprocess.run(args["#post_command"], shell=True, check=True)
         os.chdir(old_workdir)
+        print("\nPost-command exited with success.")
