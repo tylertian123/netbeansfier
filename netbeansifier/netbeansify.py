@@ -5,7 +5,7 @@ import shutil
 import tempfile
 import subprocess
 from distutils import dir_util
-from typing import Any, List, Mapping
+from typing import Any, List, Mapping, Set
 import pathspec
 
 REPLACE_PATTERN = re.compile(r"#\[(\w+)\]#")
@@ -14,22 +14,29 @@ HELP = """
 Usage: netbeansify <input directory> [options]
 
 Available Options:
-    --help
-    --sourcepath    <input directory> (optional if already specified)    
-    --name          <project name> (default: input directory name)
-    --mainclass     <main class incl. package> (default: project name)
-    --out           <output dir> (optional if using --zip)
-    --template      <template dir> (default: "template/" in the Python file's directory)
-    --sourcever     <source compat. java version> (default: 11)
-    --targetver     <target compat. java version> (default: 11)
-    --jvmargs       <additional jvm args>
-    --javacargs     <additional javac args>
-    --precommand    <command to run before generating the files (in the source dir)>
-    --postcommand   <command to run after generating the files (in the dest dir)>
-    --zip
+    --help                  Display this help message.
+    --out <dir>             Specify the output directory; if --zip is set, this is optional.
+    --sourcepath <dir>      Specify the input directory (overrides the one already specified).
+    --name <project_name>   Specify the project name (default: input directory name).
+    --mainclass <class>     Specify the main class, including the package (default: project name).
+    --sourcever <ver>       Specify the source code's compatible Java version (default: 11).
+    --targetver <ver>       Specify the target's compatible Java version (default: 11).
+    --jvmargs <args>        Specify additional args to pass to the JVM during execution.
+    --javacargs <args>      Specify additional args to pass to javac during compilation.
+    --precommand <cmd>      Specify a command to run before generating the files; the command is
+                                executed in the source directory. Multiple commands can be
+                                used by chaining with &&.
+    --postcommand <cmd>     Specify a command to run after generating the files; the command is
+                                executed in the destination directory. Multiple commands can be
+                                used by chaining with &&.
+    --template <dir>        Specify the template file directory (default: "template/" in the Python
+                                file's directory).
+    --zip                   Create a Netbeans project zip named ProjectName.zip in the current
+                                directory; if this is set, --out is optional.
+    --nologo                Do not include netbeanz.png in the output.
 
-netbeansifier supports gitignore-style ignore files.
-Files named .nbignore contain REPLACE_PATTERNs for files/directories that are excluded during copying.
+netbeansifier also supports gitignore-style ignore files.
+Files named .nbignore contain patterns for files/directories that are excluded during copying.
 The file itself is also ignored.
 
 You can also make a netbeansifierfile. Each line will be treated as a command-line option.
@@ -50,8 +57,10 @@ def main():
         "javac_target": "11",
         "main_class": None,
         "#out": None,
+        "#src": None,
         "#template": os.path.join(os.path.dirname(__file__), "template/"),
     }
+    flags = set()
     # Map from long option name to arg name (in the args dict)
     long_opts = {
         "name": "project_name",
@@ -64,7 +73,9 @@ def main():
         "template": "#template",
         "precommand": "#pre_command",
         "postcommand": "#post_command",
+        "sourcepath": "#src",
     }
+    long_flags = {"zip", "nologo"}
 
     # Extract command line arguments from netbeansifierfile
     cmdargs = []
@@ -95,7 +106,6 @@ def main():
     cmdargs.extend(sys.argv[1:])
 
     # Parse command line arguments
-    makezip = False
     source_path = None
     it = iter(cmdargs)
     for s in it:
@@ -103,15 +113,14 @@ def main():
             if s == "--help":
                 print(HELP)
                 sys.exit(0)
-            if s == "--zip":
-                makezip = True
-                continue
-            if s == "--sourcepath":
-                source_path = next(it)
-                continue
             try:
-                opt = long_opts[s[2:]]
-                args[opt] = next(it)
+                arg_name = s[2:]
+                # Check whether it's a flag or an argument
+                if arg_name in long_flags:
+                    flags.add(arg_name)
+                else:
+                    opt = long_opts[arg_name]
+                    args[opt] = next(it)
             except KeyError:
                 print("Invalid option:", s, file=sys.stderr)
                 sys.exit(1)
@@ -121,11 +130,14 @@ def main():
         else:
             source_path = s
 
+    if args["#src"] is not None:
+        source_path = args["#src"]
+    
     if source_path is None or not os.path.isdir(source_path):
         print("Source path not provided", file=sys.stderr)
         sys.exit(1)
 
-    if args["#out"] is None and not makezip:
+    if args["#out"] is None and "zip" not in flags:
         print("Destination path not provided", file=sys.stderr)
         sys.exit(1)
 
@@ -140,19 +152,19 @@ def main():
             # Make a temp dir inside the zip to netbeansify
             out_path = os.path.join(tempdir, args["project_name"])
             args["#out"] = out_path
-            netbeansify(source_path, args)
+            netbeansify(source_path, args, flags)
             print("Making zip file...")
             shutil.make_archive(args["project_name"], "zip", tempdir, args["project_name"])
     else:
-        netbeansify(source_path, args)
-        if makezip:
+        netbeansify(source_path, args, flags)
+        if "zip" in flags:
             print("Making zip file...")
             shutil.make_archive(args["project_name"], "zip", os.path.dirname(os.path.abspath(args["#out"])), os.path.basename(args["#out"]))
 
     print("Done.")
 
 
-def netbeansify(source_path: str, args: Mapping[str, Any]):
+def netbeansify(source_path: str, args: Mapping[str, Any], flags: Set[str]):
     """
     Generate the netbeansified project.
     """
@@ -207,10 +219,11 @@ def netbeansify(source_path: str, args: Mapping[str, Any]):
 
     print("Copying files...")
     copy_dir(source_path, os.path.join(args["#out"], "src"), [])
-    try:
-        shutil.copy(os.path.join(os.path.dirname(__file__), "netbeanz.png"), args["#out"])
-    except OSError:
-        print("Warning: Logo not found! This is very important!", file=sys.stderr)
+    if "nologo" not in flags:
+        try:
+            shutil.copy(os.path.join(os.path.dirname(__file__), "netbeanz.png"), args["#out"])
+        except OSError:
+            print("Warning: Logo not found! This is very important!", file=sys.stderr)
     
     if args.get("#post_command"):
         print("Running post-command...")

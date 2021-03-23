@@ -4,22 +4,29 @@ netbeansifier: Package up Java files into a basic Netbeans project for ICS4U.
 Usage: python3 -m netbeansifier <input directory> [options]
 
 Available Options:
-    --help
-    --sourcepath    <input directory> (optional if already specified)    
-    --name          <project name> (default: input directory name)
-    --mainclass     <main class incl. package> (default: project name)
-    --out           <output dir> (optional if using --zip)
-    --template      <template dir> (default: "template/" in the Python file's directory)
-    --sourcever     <source compat. java version> (default: 11)
-    --targetver     <target compat. java version> (default: 11)
-    --jvmargs       <additional jvm args>
-    --javacargs     <additional javac args>
-    --precommand    <command to run before generating the files (in the source dir)>
-    --postcommand   <command to run after generating the files (in the dest dir)>
-    --zip
+    --help                  Display this help message.
+    --out <dir>             Specify the output directory; if --zip is set, this is optional.
+    --sourcepath <dir>      Specify the input directory (overrides the one already specified).
+    --name <project_name>   Specify the project name (default: input directory name).
+    --mainclass <class>     Specify the main class, including the package (default: project name).
+    --sourcever <ver>       Specify the source code's compatible Java version (default: 11).
+    --targetver <ver>       Specify the target's compatible Java version (default: 11).
+    --jvmargs <args>        Specify additional args to pass to the JVM during execution.
+    --javacargs <args>      Specify additional args to pass to javac during compilation.
+    --precommand <cmd>      Specify a command to run before generating the files; the command is
+                                executed in the source directory. Multiple commands can be
+                                used by chaining with &&.
+    --postcommand <cmd>     Specify a command to run after generating the files; the command is
+                                executed in the destination directory. Multiple commands can be
+                                used by chaining with &&.
+    --template <dir>        Specify the template file directory (default: "template/" in the Python
+                                file's directory).
+    --zip                   Create a Netbeans project zip named ProjectName.zip in the current
+                                directory; if this is set, --out is optional.
+    --nologo                Do not include netbeanz.png in the output.
 
-netbeansifier supports gitignore-style ignore files.
-Files named .nbignore contain REPLACE_PATTERNs for files/directories that are excluded during copying.
+netbeansifier also supports gitignore-style ignore files.
+Files named .nbignore contain patterns for files/directories that are excluded during copying.
 The file itself is also ignored.
 
 You can also make a netbeansifierfile. Each line will be treated as a command-line option.
