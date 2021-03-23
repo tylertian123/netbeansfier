@@ -1,5 +1,10 @@
 # netbeansifier
 
+[![PyPI](https://img.shields.io/pypi/v/netbeansifier)](https://pypi.org/project/netbeansifier/)
+[![MIT License](https://img.shields.io/pypi/l/netbeansifier)](https://github.com/tylertian123/netbeansifier/blob/master/LICENSE)
+[![Python 3](https://img.shields.io/pypi/pyversions/netbeansifier)](https://pypi.org/project/netbeansifier/)
+
+
 Simple and dumb Python script that packages up Java files into a basic NetBeans project for ICS4U.
 
 ```text
