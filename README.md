@@ -31,6 +31,7 @@ Available Options:
     --zip                   Create a NetBeans project zip named ProjectName.zip in the current
                                 directory; if this is set, --out is optional.
     --nologo                Do not include netbeanz.png in the output.
+    --verbose               Print more output.
 
 netbeansifier also supports gitignore-style ignore files.
 Files named .nbignore contain patterns for files/directories that are excluded during copying.

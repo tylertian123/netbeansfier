@@ -34,6 +34,7 @@ Available Options:
     --zip                   Create a NetBeans project zip named ProjectName.zip in the current
                                 directory; if this is set, --out is optional.
     --nologo                Do not include netbeanz.png in the output.
+    --verbose               Print more output.
 
 netbeansifier also supports gitignore-style ignore files.
 Files named .nbignore contain patterns for files/directories that are excluded during copying.
@@ -75,7 +76,7 @@ def main():
         "postcommand": "#post_command",
         "sourcepath": "#src",
     }
-    long_flags = {"zip", "nologo"}
+    long_flags = {"zip", "nologo", "verbose"}
 
     # Extract command line arguments from netbeansifierfile
     cmdargs = []
@@ -169,6 +170,7 @@ def netbeansify(source_path: str, args: Mapping[str, Any], flags: Set[str]):
     Generate the netbeansified project.
     """
     
+    verbose = "verbose" in flags
     print("Netbeansify started.")
     # Make sure these paths are absolute
     source_path = os.path.abspath(source_path)
@@ -184,21 +186,26 @@ def netbeansify(source_path: str, args: Mapping[str, Any], flags: Set[str]):
     # Copy over the template
     dir_util.copy_tree(args["#template"], args["#out"])
 
-    print("Starting template file generation...")
+    if verbose:
+        print("Starting template file generation...")
     for dirpath, _, files in os.walk(args["#out"]):
         for file in files:
             file = os.path.join(dirpath, file)
-            print("Generating", file)
+            if verbose:
+                print("Generating", file)
             try:
                 with open(file, "r") as f:
                     text = f.read()
                 with open(file, "w") as f:
                     f.write(REPLACE_PATTERN.sub(lambda match: args.get(match.group(1), ""), text))
             except UnicodeDecodeError:
-                print("File", file, "is a binary, skipping.")
+                if verbose:
+                    print("File", file, "is a binary, skipping.")
 
     # Copy over the files
     def copy_dir(src_dir: str, dest_dir: str, ignores: List[Any]):
+        if verbose:
+            print(f"Copying '{src_dir}' to '{dest_dir}'...")
         ignore_file = os.path.join(src_dir, ".nbignore")
         has_ignore = False
         if os.path.exists(ignore_file):
@@ -213,6 +220,8 @@ def netbeansify(source_path: str, args: Mapping[str, Any], flags: Set[str]):
                 if entry.is_file():
                     # copy the file over
                     shutil.copyfile(os.path.join(src_dir, entry.name), os.path.join(dest_dir, entry.name))
+                    if verbose:
+                        print(f"File copied: '{entry.name}'")
                 elif entry.is_dir():
                     # Make sure that this directory is not the destination
                     if os.path.abspath(entry.path) == args["#out"]:

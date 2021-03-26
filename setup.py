@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="netbeansifier",
-    version="1.0.0",
+    version="1.0.1",
     author="Tyler Tian",
     author_email="tylertian123@gmail.com",
     include_package_data=True,
