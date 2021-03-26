@@ -215,7 +215,12 @@ def netbeansify(source_path: str, args: Mapping[str, Any], flags: Set[str]):
         os.makedirs(dest_dir, exist_ok=True)
         with os.scandir(src_dir) as sdit:
             for entry in sdit:
-                if entry.name == ".nbignore" or entry.name == "netbeansifierfile" or any(spec.match_file(entry.path) for spec in ignores):
+                # Ignore ignore files and netbeansifierfiles
+                if entry.name == ".nbignore" or entry.name == "netbeansifierfile":
+                    continue
+                # Match ignore patterns
+                # Append a trailing slash for directories, otherwise patterns such as dir/ won't match properly
+                if any(spec.match_file(os.path.join(entry.path, "") if entry.is_dir() else entry.path) for spec in ignores):
                     continue
                 if entry.is_file():
                     # copy the file over
